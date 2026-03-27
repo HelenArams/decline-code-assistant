@@ -93,3 +93,16 @@ class Transaction(BaseModel):
         return (self.scheme is Scheme.MASTERCARD and self.response_code == "65") or (
             self.scheme is Scheme.VISA and self.response_code == "1A"
         )
+
+
+class Citation(BaseModel):
+    """Pointer to a knowledge-base chunk: file plus heading."""
+
+    model_config = ConfigDict(frozen=True)
+
+    source: str = Field(description="Knowledge file name, e.g. retry_policies.md")
+    heading: str = Field(description="Heading of the cited section")
+    chunk_id: str = Field(description="Stable id: '<source>#<heading-slug>'")
+
+    def __str__(self) -> str:
+        return f"{self.source} > {self.heading}"
