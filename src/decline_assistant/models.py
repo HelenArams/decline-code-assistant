@@ -162,3 +162,36 @@ class Cluster(BaseModel):
             f"window: {s.first_seen.isoformat()} .. {s.last_seen.isoformat()} "
             f"({s.span_seconds:.0f}s)"
         )
+
+
+class Severity(StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class ClaimKind(StrEnum):
+    ROOT_CAUSE = "root_cause"
+    ACTION = "action"
+
+
+class Claim(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    text: str = Field(min_length=1)
+    kind: ClaimKind
+    citations: list[str] = Field(default_factory=list, description="chunk ids")
+
+
+class ClusterAnalysis(BaseModel):
+    """What the model hands back for one cluster, before verification."""
+
+    model_config = ConfigDict(frozen=True)
+
+    cluster_id: str
+    explanation: str = Field(min_length=1)
+    severity: Severity
+    retryable: bool
+    recommended_action: str = Field(min_length=1)
+    claims: list[Claim] = Field(default_factory=list)

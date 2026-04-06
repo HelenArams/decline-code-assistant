@@ -8,14 +8,14 @@ from decline_assistant.clustering import cluster_transactions
 from decline_assistant.config import Settings
 from decline_assistant.graph import GraphDeps, build_graph
 from decline_assistant.graph.build import NODE_ORDER
-from decline_assistant.llm import FakeAnthropic
+from decline_assistant.llm import OfflineAnalyst
 from decline_assistant.loader import load_declines
 
 
 @pytest.fixture
 def deps(knowledge_dir: Path) -> GraphDeps:
     settings = Settings(knowledge_dir=knowledge_dir, llm_backend="fake")
-    return GraphDeps.build(settings, llm=FakeAnthropic())
+    return GraphDeps.build(settings, llm=OfflineAnalyst())
 
 
 def test_clusters_group_by_code_and_mcc_largest_first(sample_csv: Path) -> None:

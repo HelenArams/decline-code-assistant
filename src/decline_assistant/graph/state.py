@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TypedDict
 
-from decline_assistant.models import Cluster, Transaction
+from decline_assistant.models import Cluster, ClusterAnalysis, Transaction
 
 
 class GraphState(TypedDict, total=False):
@@ -13,4 +13,5 @@ class GraphState(TypedDict, total=False):
     clusters: list[Cluster]
     evidence: dict[str, list[str]]
     """cluster_id -> chunk ids retrieved for that cluster (the model may cite only these)."""
+    analyses: dict[str, ClusterAnalysis]
     warnings: list[str]

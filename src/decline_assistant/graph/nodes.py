@@ -5,10 +5,14 @@ from __future__ import annotations
 from typing import Protocol
 
 from decline_assistant.clustering import cluster_transactions
+from decline_assistant.graph.analyze import AnalysisError, analyze_cluster
 from decline_assistant.graph.deps import GraphDeps
 from decline_assistant.graph.state import GraphState
+from decline_assistant.knowledge import Chunk
+from decline_assistant.llm.prompts import SYSTEM_PROMPT, codebook_block
+from decline_assistant.llm.tools import ToolExecutor
 from decline_assistant.loader import load_declines
-from decline_assistant.models import Cluster
+from decline_assistant.models import Cluster, ClusterAnalysis
 
 
 class Node(Protocol):
@@ -77,3 +81,35 @@ def make_retrieve(deps: GraphDeps) -> Node:
         return {"evidence": evidence}
 
     return retrieve
+
+
+def make_analyze(deps: GraphDeps) -> Node:
+    # system prefix is built once per run: it must be identical for every cluster so the
+    # tools + system part of the prompt is served from cache after the first call
+    system = (SYSTEM_PROMPT, codebook_block(deps.codebook))
+
+    def analyze(state: GraphState) -> GraphState:
+        executor = ToolExecutor(deps.retriever, deps.codebook, state["clusters"])
+        analyses: dict[str, ClusterAnalysis] = {}
+        warnings = list(state.get("warnings", []))
+        for cluster in state["clusters"]:
+            chunks: list[Chunk] = []
+            for chunk_id in state["evidence"].get(cluster.id, []):
+                chunk = deps.retriever.get(chunk_id)
+                if chunk is not None:
+                    chunks.append(chunk)
+            try:
+                analyses[cluster.id] = analyze_cluster(
+                    deps.llm,
+                    executor,
+                    cluster,
+                    chunks,
+                    system=system,
+                    max_rounds=deps.settings.max_tool_rounds,
+                    max_tokens=deps.settings.max_tokens,
+                )
+            except AnalysisError as exc:
+                warnings.append(f"analysis skipped for {exc}")
+        return {"analyses": analyses, "warnings": warnings}
+
+    return analyze
