@@ -106,3 +106,59 @@ class Citation(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.source} > {self.heading}"
+
+
+class ClusterStats(BaseModel):
+    """Aggregates the model is allowed to see. No PANs, no tokens, no ids."""
+
+    model_config = ConfigDict(frozen=True)
+
+    count: int
+    total_by_currency: dict[str, Decimal]
+    schemes: dict[str, int]
+    three_ds: dict[str, int]
+    unauthenticated_share: float = Field(ge=0.0, le=1.0)
+    retried_rows: int
+    max_retry_count: int
+    first_seen: datetime
+    last_seen: datetime
+
+    @property
+    def span_seconds(self) -> float:
+        return (self.last_seen - self.first_seen).total_seconds()
+
+
+class Cluster(BaseModel):
+    """Declines sharing a response code and merchant category."""
+
+    model_config = ConfigDict(frozen=True)
+
+    id: str
+    response_code: ResponseCode
+    mcc: Mcc
+    transaction_ids: list[str]
+    stats: ClusterStats
+
+    @property
+    def size(self) -> int:
+        return self.stats.count
+
+    def brief(self) -> str:
+        """Deterministic plain-text summary used in prompts and tool results."""
+        s = self.stats
+        totals = ", ".join(f"{amt:.2f} {ccy}" for ccy, amt in sorted(s.total_by_currency.items()))
+        schemes = ", ".join(f"{k}={v}" for k, v in sorted(s.schemes.items()))
+        three_ds = ", ".join(f"{k}={v}" for k, v in sorted(s.three_ds.items()))
+        return (
+            f"cluster_id: {self.id}\n"
+            f"response_code: {self.response_code}\n"
+            f"mcc: {self.mcc}\n"
+            f"declines: {s.count}\n"
+            f"total_amount: {totals}\n"
+            f"schemes: {schemes}\n"
+            f"three_ds_status: {three_ds}\n"
+            f"unauthenticated_share: {s.unauthenticated_share:.0%}\n"
+            f"rows_with_retries: {s.retried_rows} (max retry_count {s.max_retry_count})\n"
+            f"window: {s.first_seen.isoformat()} .. {s.last_seen.isoformat()} "
+            f"({s.span_seconds:.0f}s)"
+        )
