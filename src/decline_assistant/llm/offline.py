@@ -39,6 +39,14 @@ def _text_of(content: Any) -> str:
     return "\n".join(parts)
 
 
+def _action(retryable: str) -> str:
+    text = re.sub(r"^(yes|no)\b\s*[-,(]?\s*", "", retryable, flags=re.IGNORECASE).rstrip(")")
+    text = text or retryable
+    if retryable.lower().startswith(("no", "never")):
+        text = f"Do not retry ({retryable})"
+    return text[0].upper() + text[1:]
+
+
 class OfflineAnalyst:
     def __init__(self) -> None:
         self.calls = 0
@@ -69,7 +77,8 @@ class OfflineAnalyst:
         chunk_id = fields.get("chunk_id")
         evidence = _EVIDENCE_ID.findall(prompt)
         retry_chunk = next((e for e in evidence if e.startswith("retry_policies.md")), None)
-        fix_chunk = next((e for e in evidence if e.startswith("merchant_fixes.md")), None)
+        sca_chunk = next((e for e in evidence if "3-d-secure" in e or "three_ds" in e), None)
+        hygiene_chunk = next((e for e in evidence if e.endswith("retry-count-hygiene")), None)
 
         if chunk_id is None:
             return {
@@ -99,12 +108,12 @@ class OfflineAnalyst:
                 "citations": [c for c in (chunk_id, retry_chunk) if c],
             },
         ]
-        if unauth > 50 and fix_chunk:
+        if unauth > 50 and sca_chunk:
             claims.append(
                 {
                     "text": "Most rows were not 3-D Secure authenticated.",
                     "kind": "root_cause",
-                    "citations": [fix_chunk],
+                    "citations": [sca_chunk],
                 }
             )
         if max_retry > 1 and kind.startswith("hard"):
@@ -113,7 +122,7 @@ class OfflineAnalyst:
                 {
                     "text": f"Rows were retried up to {max_retry} times on a hard decline.",
                     "kind": "action",
-                    "citations": [c for c in (retry_chunk,) if c],
+                    "citations": [hygiene_chunk] if hygiene_chunk else [],
                 }
             )
         return {
@@ -121,7 +130,7 @@ class OfflineAnalyst:
             "explanation": f"Code {code}: {kind} decline. See the cited section for details.",
             "severity": severity,
             "retryable": retryable.lower().startswith("yes"),
-            "recommended_action": retryable[0].upper() + retryable[1:],
+            "recommended_action": _action(retryable),
             "claims": claims,
         }
 

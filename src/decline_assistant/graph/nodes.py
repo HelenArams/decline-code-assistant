@@ -14,6 +14,7 @@ from decline_assistant.llm.prompts import SYSTEM_PROMPT, codebook_block
 from decline_assistant.llm.tools import ToolExecutor
 from decline_assistant.loader import load_declines
 from decline_assistant.models import Cluster, ClusterAnalysis
+from decline_assistant.report import build_report
 
 
 class Node(Protocol):
@@ -75,10 +76,15 @@ def make_retrieve(deps: GraphDeps) -> Node:
             entry = deps.codebook.lookup(cluster.response_code)
             if entry is not None:
                 ordered[entry.citation.chunk_id] = None
-            for query in retrieval_queries(deps, cluster):
-                for hit in deps.retriever.search(query, k=deps.settings.retrieval_k):
-                    ordered.setdefault(hit.chunk.chunk_id, None)
-            evidence[cluster.id] = list(ordered)[: deps.settings.retrieval_k + 2]
+            k = deps.settings.retrieval_k
+            per_query = [deps.retriever.search(q, k=k) for q in retrieval_queries(deps, cluster)]
+            # interleave by rank so the later, more specific queries (3DS, retry hygiene)
+            # still get a slot before the cap
+            for rank in range(k):
+                for hits in per_query:
+                    if rank < len(hits):
+                        ordered.setdefault(hits[rank].chunk.chunk_id, None)
+            evidence[cluster.id] = list(ordered)[: k + 2]
         return {"evidence": evidence}
 
     return retrieve
@@ -127,3 +133,20 @@ def make_verify(deps: GraphDeps) -> Node:
         return {"verified": verified}
 
     return verify
+
+
+def make_report(deps: GraphDeps) -> Node:
+    model = "offline" if deps.settings.llm_backend == "fake" else deps.settings.model
+
+    def report(state: GraphState) -> GraphState:
+        return {
+            "report": build_report(
+                state["clusters"],
+                state.get("verified", {}),
+                deps.retriever,
+                model=model,
+                warnings=state.get("warnings", []),
+            )
+        }
+
+    return report

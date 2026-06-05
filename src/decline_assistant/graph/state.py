@@ -6,6 +6,7 @@ from typing import TypedDict
 
 from decline_assistant.graph.verify import VerifyResult
 from decline_assistant.models import Cluster, ClusterAnalysis, Transaction
+from decline_assistant.report import DeclineReport
 
 
 class GraphState(TypedDict, total=False):
@@ -17,3 +18,4 @@ class GraphState(TypedDict, total=False):
     analyses: dict[str, ClusterAnalysis]
     verified: dict[str, VerifyResult]
     warnings: list[str]
+    report: DeclineReport

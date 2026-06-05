@@ -10,12 +10,13 @@ from decline_assistant.graph.nodes import (
     make_analyze,
     make_cluster,
     make_load,
+    make_report,
     make_retrieve,
     make_verify,
 )
 from decline_assistant.graph.state import GraphState
 
-NODE_ORDER: tuple[str, ...] = ("load", "cluster", "retrieve", "analyze", "verify")
+NODE_ORDER: tuple[str, ...] = ("load", "cluster", "retrieve", "analyze", "verify", "report")
 
 
 def build_graph(deps: GraphDeps) -> CompiledStateGraph[GraphState, None, GraphState, GraphState]:
@@ -25,6 +26,7 @@ def build_graph(deps: GraphDeps) -> CompiledStateGraph[GraphState, None, GraphSt
     graph.add_node("retrieve", make_retrieve(deps))
     graph.add_node("analyze", make_analyze(deps))
     graph.add_node("verify", make_verify(deps))
+    graph.add_node("report", make_report(deps))
     previous = START
     for name in NODE_ORDER:
         graph.add_edge(previous, name)
