@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from decline_assistant.graph.verify import VerifyResult
 from decline_assistant.knowledge import Retriever
 from decline_assistant.models import Citation, Claim, Cluster, Severity
+
+if TYPE_CHECKING:  # graph imports this module, avoid the cycle at runtime
+    from decline_assistant.graph.verify import VerifyResult
 
 _SEVERITY_RANK = {Severity.CRITICAL: 0, Severity.HIGH: 1, Severity.MEDIUM: 2, Severity.LOW: 3}
 

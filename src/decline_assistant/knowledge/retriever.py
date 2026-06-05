@@ -66,9 +66,21 @@ _STOPWORDS = frozenset(
 )
 
 
+def _stem(token: str) -> str:
+    # deliberately tiny: plural folding is enough for this corpus ("retries" vs "retry",
+    # "declines" vs "decline"); a real stemmer mangled the response codes
+    if len(token) > 4 and token.endswith("ies"):
+        return token[:-3] + "y"
+    if len(token) > 3 and token.endswith("s") and not token.endswith("ss"):
+        return token[:-1]
+    return token
+
+
 def tokenize(text: str) -> list[str]:
     """Lower-case alphanumeric tokens; keeps two-character response codes like ``05``."""
-    return [t for t in _TOKEN_RE.findall(text.lower()) if t not in _STOPWORDS and len(t) > 1]
+    return [
+        _stem(t) for t in _TOKEN_RE.findall(text.lower()) if t not in _STOPWORDS and len(t) > 1
+    ]
 
 
 @dataclass(frozen=True, slots=True)
