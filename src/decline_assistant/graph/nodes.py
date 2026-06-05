@@ -8,6 +8,7 @@ from decline_assistant.clustering import cluster_transactions
 from decline_assistant.graph.analyze import AnalysisError, analyze_cluster
 from decline_assistant.graph.deps import GraphDeps
 from decline_assistant.graph.state import GraphState
+from decline_assistant.graph.verify import VerifyResult, verify_analysis
 from decline_assistant.knowledge import Chunk
 from decline_assistant.llm.prompts import SYSTEM_PROMPT, codebook_block
 from decline_assistant.llm.tools import ToolExecutor
@@ -113,3 +114,16 @@ def make_analyze(deps: GraphDeps) -> Node:
         return {"analyses": analyses, "warnings": warnings}
 
     return analyze
+
+
+def make_verify(deps: GraphDeps) -> Node:
+    def verify(state: GraphState) -> GraphState:
+        by_id = {c.id: c for c in state["clusters"]}
+        verified: dict[str, VerifyResult] = {}
+        for cluster_id, analysis in state.get("analyses", {}).items():
+            verified[cluster_id] = verify_analysis(
+                analysis, by_id[cluster_id], deps.retriever, deps.codebook
+            )
+        return {"verified": verified}
+
+    return verify

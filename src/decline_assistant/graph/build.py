@@ -6,10 +6,16 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from decline_assistant.graph.deps import GraphDeps
-from decline_assistant.graph.nodes import make_analyze, make_cluster, make_load, make_retrieve
+from decline_assistant.graph.nodes import (
+    make_analyze,
+    make_cluster,
+    make_load,
+    make_retrieve,
+    make_verify,
+)
 from decline_assistant.graph.state import GraphState
 
-NODE_ORDER: tuple[str, ...] = ("load", "cluster", "retrieve", "analyze")
+NODE_ORDER: tuple[str, ...] = ("load", "cluster", "retrieve", "analyze", "verify")
 
 
 def build_graph(deps: GraphDeps) -> CompiledStateGraph[GraphState, None, GraphState, GraphState]:
@@ -18,6 +24,7 @@ def build_graph(deps: GraphDeps) -> CompiledStateGraph[GraphState, None, GraphSt
     graph.add_node("cluster", make_cluster(deps))
     graph.add_node("retrieve", make_retrieve(deps))
     graph.add_node("analyze", make_analyze(deps))
+    graph.add_node("verify", make_verify(deps))
     previous = START
     for name in NODE_ORDER:
         graph.add_edge(previous, name)
