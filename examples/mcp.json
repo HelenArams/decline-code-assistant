@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "declines": {
+      "command": "/absolute/path/to/decline-code-assistant/.venv/bin/declines-mcp",
+      "args": [],
+      "env": {
+        "ANTHROPIC_API_KEY": "sk-ant-...",
+        "ANTHROPIC_MODEL": "claude-sonnet-4-5"
+      }
+    }
+  }
+}
