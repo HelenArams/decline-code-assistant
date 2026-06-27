@@ -78,9 +78,7 @@ def _stem(token: str) -> str:
 
 def tokenize(text: str) -> list[str]:
     """Lower-case alphanumeric tokens; keeps two-character response codes like ``05``."""
-    return [
-        _stem(t) for t in _TOKEN_RE.findall(text.lower()) if t not in _STOPWORDS and len(t) > 1
-    ]
+    return [_stem(t) for t in _TOKEN_RE.findall(text.lower()) if t not in _STOPWORDS and len(t) > 1]
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,0 +1,63 @@
+# Golden cases for the decline analysis.
+# Checks are deliberately about facts that must not drift (retryable flag, cited
+# sections, key words in the action), not about wording.
+cases:
+  - name: insufficient-funds-subscriptions
+    csv: |
+      id,timestamp,masked_pan,amount,currency,mcc,response_code,scheme,three_ds_status,retry_count
+      e1,2026-03-01T08:00:00Z,411111******1111,9.99,EUR,5968,51,visa,Y,0
+      e2,2026-03-01T08:05:00Z,522222******2222,9.99,EUR,5968,51,mastercard,Y,1
+      e3,2026-03-01T08:09:00Z,tok_aa11,19.99,EUR,5968,51,visa,Y,0
+    expect:
+      "51/5968":
+        retryable: true
+        severity_at_most: medium
+        must_cite: [iso8583_response_codes.md#51-insufficient-funds]
+        action_mentions: ["24 hours"]
+
+  - name: sca-soft-declines-mastercard
+    csv: |
+      id,timestamp,masked_pan,amount,currency,mcc,response_code,scheme,three_ds_status,retry_count
+      e1,2026-03-01T09:00:00Z,510510******5100,35.00,EUR,5734,65,mastercard,none,0
+      e2,2026-03-01T09:01:00Z,555555******4444,70.00,EUR,5734,65,mastercard,none,0
+    expect:
+      "65/5734":
+        retryable: true
+        must_cite: [iso8583_response_codes.md#65-exceeds-withdrawal-frequency-limit-authentication-required]
+        action_mentions: ["3-D Secure"]
+
+  - name: expired-card-on-file-retried
+    csv: |
+      id,timestamp,masked_pan,amount,currency,mcc,response_code,scheme,three_ds_status,retry_count
+      e1,2026-03-01T10:00:00Z,tok_c3d4,15.00,EUR,5968,54,visa,none,3
+      e2,2026-03-01T10:01:00Z,tok_a1b2,15.00,EUR,5968,54,visa,none,2
+    expect:
+      "54/5968":
+        retryable: false
+        severity_at_least: high
+        must_cite: [iso8583_response_codes.md#54-expired-card]
+        action_mentions: ["expiry"]
+
+  - name: issuer-outage
+    csv: |
+      id,timestamp,masked_pan,amount,currency,mcc,response_code,scheme,three_ds_status,retry_count
+      e1,2026-03-01T14:20:00Z,491761******0030,40.00,EUR,5734,91,visa,Y,0
+      e2,2026-03-01T14:20:02Z,491761******0031,12.00,EUR,5734,91,visa,Y,0
+      e3,2026-03-01T14:20:05Z,491761******0032,8.50,EUR,5734,91,visa,Y,1
+    expect:
+      "91/5734":
+        retryable: true
+        severity_at_least: high
+        must_cite: [iso8583_response_codes.md#91-issuer-or-switch-inoperative]
+        action_mentions: ["backoff"]
+
+  - name: stolen-card-must-not-retry
+    csv: |
+      id,timestamp,masked_pan,amount,currency,mcc,response_code,scheme,three_ds_status,retry_count
+      e1,2026-03-01T15:00:00Z,401288******1881,250.00,USD,5732,43,visa,none,0
+      e2,2026-03-01T15:10:00Z,4012888888881881,250.00,USD,5732,43,visa,none,1
+    expect:
+      "43/5732":
+        retryable: false
+        must_cite: [iso8583_response_codes.md#43-stolen-card]
+        action_mentions: ["retry"]
