@@ -23,8 +23,11 @@ class FakeExhaustedError(RuntimeError):
 
 
 class FakeAnthropic:
-    def __init__(self, turns: Iterable[Sequence[FakeBlock]] = ()) -> None:
+    def __init__(
+        self, turns: Iterable[Sequence[FakeBlock]] = (), *, stop_reasons: Sequence[str] = ()
+    ) -> None:
         self._turns: deque[Sequence[FakeBlock]] = deque(turns)
+        self._stop_overrides: deque[str] = deque(stop_reasons)
         self.calls: list[LLMRequest] = []
         self._counter = 0
 
@@ -49,6 +52,8 @@ class FakeAnthropic:
         blocks = list(self._turns.popleft())
         self._counter += 1
         stop_reason = "tool_use" if any(b.type == "tool_use" for b in blocks) else "end_turn"
+        if self._stop_overrides:
+            stop_reason = self._stop_overrides.popleft()
         return Message(
             id=f"msg_fake_{self._counter}",
             type="message",

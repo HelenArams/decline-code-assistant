@@ -68,6 +68,10 @@ def analyze_cluster(
             messages.append({"role": "user", "content": results})
             continue
 
+        if message.stop_reason == "refusal":
+            # check this before reading content, a refusal is not a parse error
+            raise AnalysisError(f"{cluster.id}: model declined to answer")
+
         if message.stop_reason == "max_tokens":
             raise AnalysisError(f"{cluster.id}: response truncated at {max_tokens} tokens")
 

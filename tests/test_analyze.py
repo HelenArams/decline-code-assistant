@@ -73,3 +73,10 @@ def test_gives_up_after_max_rounds(setup: tuple[ToolExecutor, Cluster]) -> None:
     loop = [[FakeAnthropic.tool_use("lookup_code", {"code": "51"})]] * 3
     with pytest.raises(AnalysisError, match="no final answer"):
         analyze_cluster(FakeAnthropic(loop), executor, cluster, [], system=("s",), max_rounds=3)
+
+
+def test_refusal_is_not_parsed(setup: tuple[ToolExecutor, Cluster]) -> None:
+    executor, cluster = setup
+    fake = FakeAnthropic([[FakeAnthropic.text("")]], stop_reasons=["refusal"])
+    with pytest.raises(AnalysisError, match="declined to answer"):
+        analyze_cluster(fake, executor, cluster, [], system=("sys",))
