@@ -39,8 +39,6 @@ Currency = Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")]
 
 
 class Transaction(BaseModel):
-    """One failed authorization as it appears in the input CSV."""
-
     model_config = ConfigDict(frozen=True, str_strip_whitespace=True)
 
     id: str = Field(min_length=1)
@@ -96,8 +94,6 @@ class Transaction(BaseModel):
 
 
 class Citation(BaseModel):
-    """Pointer to a knowledge-base chunk: file plus heading."""
-
     model_config = ConfigDict(frozen=True)
 
     source: str = Field(description="Knowledge file name, e.g. retry_policies.md")
@@ -129,8 +125,6 @@ class ClusterStats(BaseModel):
 
 
 class Cluster(BaseModel):
-    """Declines sharing a response code and merchant category."""
-
     model_config = ConfigDict(frozen=True)
 
     id: str
@@ -185,8 +179,6 @@ class Claim(BaseModel):
 
 
 class ClusterAnalysis(BaseModel):
-    """What the model hands back for one cluster, before verification."""
-
     model_config = ConfigDict(frozen=True)
 
     cluster_id: str

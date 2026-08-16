@@ -84,6 +84,7 @@ def make_retrieve(deps: GraphDeps) -> Node:
                 for hits in per_query:
                     if rank < len(hits):
                         ordered.setdefault(hits[rank].chunk.chunk_id, None)
+            # NOTE: k + 2 keeps the prompt small; bump it if clusters start missing 3DS guidance
             evidence[cluster.id] = list(ordered)[: k + 2]
         return {"evidence": evidence}
 

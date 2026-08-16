@@ -19,7 +19,7 @@ FakeBlock = TextBlock | ToolUseBlock
 
 
 class FakeExhaustedError(RuntimeError):
-    """Raised when the graph asks for more turns than the test scripted."""
+    pass
 
 
 class FakeAnthropic:

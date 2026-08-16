@@ -1,5 +1,3 @@
-"""Group declines into clusters the analysis works on."""
-
 from __future__ import annotations
 
 from collections import Counter, defaultdict
@@ -32,7 +30,7 @@ def build_stats(transactions: list[Transaction]) -> ClusterStats:
 
 
 def cluster_transactions(transactions: Iterable[Transaction]) -> list[Cluster]:
-    """Cluster by (response code, MCC); largest clusters first, ties by code then MCC."""
+    # TODO: issuer BIN / country as an extra dimension, most 05 questions need it
     groups: defaultdict[tuple[str, str], list[Transaction]] = defaultdict(list)
     for tx in transactions:
         groups[cluster_key(tx)].append(tx)
